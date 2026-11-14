@@ -1,22 +1,28 @@
+import java.awt.*;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.*;
 
-public class ManagerState extends WarehouseState 
+/** Screen and actions available to a warehouse manager.
+ * @author Aj Johnson, Aaditya Malla, Chidera Izuora
+ * @version 1.0
+ */
+public class ManagerState extends WarehouseState
 {
     private static ManagerState instance;
     private final Warehouse warehouse = Warehouse.getInstance();
-
-    private static final int LOGOUT = 0;
-    private static final int ADD_PRODUCT = 1;
-    private static final int DISPLAY_WAITLIST = 2;
-    private static final int RECEIVE_SHIPMENT= 3;
-    private static final int BECOME_CLERK = 4;
-    private static final int HELP = 5;
-
+    /**
+     * Private constructor to enforce singleton pattern.
+     */
     private ManagerState() {
         super();
     }
 
+    /**
+     * Returns the singleton instance of ManagerState.
+     * @return the singleton instance of ManagerState
+     */
     public static ManagerState getInstance() {
         if (instance == null) {
             instance = new ManagerState();
@@ -24,109 +30,142 @@ public class ManagerState extends WarehouseState
         return instance;
     }
 
-    @Override
-    public void run() {
-        boolean active = true;
-        while(active)
-        {
-            int command = getCommand("Manager Menu:\n" +
-                    "1. Add Product\n" +
-                    "2. Display Waitlist\n" +
-                    "3. Receive Shipment\n" +
-                    "4. Become Clerk\n" +
-                    "5. Help\n" +
-                    "0. Logout\n" +
-                    "Enter command: ");
-
-            switch (command) {
-                case ADD_PRODUCT -> addProduct();
-                case DISPLAY_WAITLIST -> displayWaitlist();
-                case RECEIVE_SHIPMENT -> receiveShipment();
-                case BECOME_CLERK -> { becomeClerk(); active = false; }
-                case HELP -> help();
-                case LOGOUT -> { logout(); active = false; }
-                default -> System.out.println("Invalid command. Please try again.");
-            }
-        }
-    }
-
-    public void help() {
-        System.out.println("Manager State Help:");
-        System.out.println("1. Add Product");
-        System.out.println("2. Display Waitlist");
-        System.out.println("3. Receive Shipment");
-        System.out.println("4. Become Clerk");
-        System.out.println("0. Logout");
-    }
-
+    /**
+     * Prompts for and adds a product to the catalog.
+     * @return the ID of the added product
+     */
     public void addProduct() {
-        System.out.print("Enter name: ");  String name = in.nextLine();
-        System.out.print("Enter price: "); double price = Double.parseDouble(in.nextLine());
-        System.out.print("Enter stock: "); int stock = Integer.parseInt(in.nextLine());
+        String name = promptRequired("Enter product name:");
+        Double price = promptDouble("Enter product price:");
+        Integer stock = promptInt("Enter initial stock:", 0);
         String id = warehouse.addProduct(name, price, stock);
-        System.out.println("Product added: ID=" + id);
+        StringBuilder sb = new StringBuilder();
+        sb.append("Product added:\nID: ").append(id);
+        display(sb.toString());
     }
 
+    /**
+     * Prompts for a product and displays its waitlist.
+     * @return the waitlist of the product
+     */
     public void displayWaitlist() {
-        System.out.print("Enter product ID: ");
-        String productID = in.nextLine().trim();
+        String productID = promptRequired("Enter product ID:");
         List<WaitlistView> waitlist = warehouse.getProductWaitlistView(productID);
-        if (waitlist == null) { System.out.println("Product not found."); return; }
-        if (waitlist.isEmpty()) { System.out.println("Waitlist is empty."); return; }
+        if (waitlist == null) { display("Product not found."); return; }
+        if (waitlist.isEmpty()) { display("Waitlist is empty."); return; }
+        StringBuilder sb = new StringBuilder("Waitlist for product ID ").append(productID).append(":\n");
         for (WaitlistView item : waitlist)
         {
-            System.out.printf("Client=%s, Name=%s, Price=$%.2f, WaitQty=%d, Stock=%d%n",
-            item.getClientID(), item.getProductName(), item.getPrice(),
-            item.getWaitingQuantity(), item.getStock());
+            sb.append(String.format("Client=%s, Name=%s, Price=$%.2f, WaitQty=%d, Stock=%d%n",
+                item.getClientID(), item.getProductName(), item.getPrice(),
+                item.getWaitingQuantity(), item.getStock()));
         }
+        display(sb.toString());
     }
 
+    /**
+     * Prompts for shipment lines and submits the shipment.
+     * @return the report of the shipment
+     */
     public void receiveShipment() {
         List<ShipmentLine> lines = new ArrayList<>();
 
-        System.out.println("Enter shipment lines. Blank product ID when done.");
+        display("Enter shipment lines (product ID and quantity). Leave product ID blank to finish.");
         while (true)
         {
-            System.out.print("Product ID (blank to finish): ");
-            String productID = in.nextLine().trim();
+            String productID = promptRequired("Enter product ID:");
             if (productID.isEmpty()) break;
 
-            System.out.print("Quantity received: ");
-            int qty;
-            try
-            {
-                qty = Integer.parseInt(in.nextLine().trim());
-            }
-            catch (NumberFormatException e)
-            {
-                System.out.println("  Not a number — line skipped.");
+            Integer qty = promptInt("Quantity received:", 1);
+            if (qty == null) break;
+            if (qty <= 0) {
+                display("Quantity must be positive.");
                 continue;
             }
-            if (qty <= 0)
-            {
-                System.out.println("  Quantity must be positive — line skipped.");
-                continue;
-            }
-
             lines.add(new ShipmentLine(productID, qty));
         }
 
         if (lines.isEmpty())
         {
-            System.out.println("No shipment lines entered.");
+            display("No shipment lines entered.");
             return;
         }
 
         String report = warehouse.receiveShipment(lines);
-        System.out.println(report);
+        display(report);
     }
 
+    /**
+     * Switches to the clerk role.
+     * @param id the ID of the clerk
+     */
     public void becomeClerk() {
-    context.become(WarehouseContext.CLERK, null);
+        context.login(context.CLERK, null);
     }
 
-    public void logout() {
+    /**
+     * Logs out of the manager state.
+     */
+    public void exit() {
         context.logout();
+        display("Exiting Manager State.");
     }
+    /**
+     * Prepares the frame for the manager state.
+     */
+    @Override
+    public void run() {
+        JFrame frame = prepareFrame();
+        frame.setTitle("Warehouse - Clerk");
+        frame.getContentPane().setLayout(new BorderLayout());   // buttons on top, output below
 
+        JPanel buttons = new JPanel(new FlowLayout());
+        buttons.add(new AddProductButton());
+        buttons.add(new DisplayWaitlistButton());
+        buttons.add(new ReceiveShipmentButton());
+        buttons.add(new BecomeClerkButton());
+        buttons.add(new LogoutButton());
+
+        output.setEditable(false);
+        frame.getContentPane().add(buttons, BorderLayout.NORTH);
+        frame.getContentPane().add(new JScrollPane(output), BorderLayout.CENTER);
+        showFrame(frame);
+    }
+    /**
+     * Prepares the frame for the manager state.
+     *
+     * @return the prepared JFrame
+     */
+    private class AddProductButton extends JButton implements ActionListener {
+        AddProductButton() { super("Add Product"); addActionListener(this); }
+        @Override public void actionPerformed(ActionEvent e) { addProduct(); }
+    }
+    /**
+     * Button to display the waitlist for a product.
+     */
+    private class DisplayWaitlistButton extends JButton implements ActionListener {
+        DisplayWaitlistButton() { super("Display Waitlist"); addActionListener(this); }
+        @Override public void actionPerformed(ActionEvent e) { displayWaitlist(); }
+    }
+    /**
+     * Button to receive a shipment.
+     */
+    private class ReceiveShipmentButton extends JButton implements ActionListener {
+        ReceiveShipmentButton() { super("Receive Shipment"); addActionListener(this); }
+        @Override public void actionPerformed(ActionEvent e) { receiveShipment(); }
+    }
+    /**
+     * Button to switch to the clerk role.
+     */
+    private class BecomeClerkButton extends JButton implements ActionListener {
+        BecomeClerkButton() { super("Become Clerk"); addActionListener(this); }
+        @Override public void actionPerformed(ActionEvent e) { becomeClerk(); }
+    }
+    /**
+     * Button to log out and return to the login state.
+     */
+    private class LogoutButton extends JButton implements ActionListener {
+        LogoutButton() { super("Logout"); addActionListener(this); }
+        @Override public void actionPerformed(ActionEvent e) { exit(); }
+    }
 }

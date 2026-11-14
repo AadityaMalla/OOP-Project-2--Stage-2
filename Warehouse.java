@@ -32,6 +32,11 @@ public class Warehouse
     private static final Warehouse instance = new Warehouse();
     private Warehouse() {} // Private constructor to enforce singleton pattern
 
+    /**
+     * Returns the singleton warehouse instance.
+     *
+     * @return the shared warehouse
+     */
     public static Warehouse getInstance()
     {
         return instance;
@@ -162,7 +167,7 @@ public class Warehouse
         Product p = catalog.searchForProduct(productID);
         return (p == null) ? null : p.getWaitlist();
     }
-    
+
 
     /**
      * Records a transaction on a client's account.
@@ -374,81 +379,70 @@ public class Warehouse
                 amount, c.getName(), c.getBalance());
     }
 
+    /**
+     * Finds a client by ID.
+     *
+     * @param clientID the client ID
+     * @return the matching client, or {@code null} if none exists
+     */
     public Client getClient(String clientID) {
         return clientList.searchForClient(clientID);
     }
 
     /**
-     * Removes a product from a client's wishlist.
+     * Builds product views appropriate for a user's role.
      *
-     * @param clientID  the id of the client
-     * @param productID the id of the product to remove
-     * @return {@code true} if the entry was removed; {@code false} if the client
-     *         is unknown or the product is not on the wishlist
-     */
-    public boolean removeFromWishlist(String clientID, String productID)
-    {
-        return clientList.removeClientWishlistEntry(clientID, productID);
-    }
-
-    /**
-     * Changes the quantity of a product already on a client's wishlist.
-     *
-     * @param clientID  the id of the client
-     * @param productID the id of the product on the wishlist
-     * @param quantity  the new quantity; must be positive
-     * @return {@code true} if the quantity was changed; {@code false} if the
-     *         client is unknown, the product is not on the wishlist, or the
-     *         quantity is not positive
-     */
-    public boolean updateWishlistQuantity(String clientID, String productID, int quantity)
-    {
-        if (quantity <= 0) return false;
-        return clientList.setClientWishlistQuantity(clientID, productID, quantity);
-    }
-
-    /**
-     * Returns the product list as seen by the given role: clients see id, name
-     * and price; clerks also see stock; managers also see the waitlist.
-     *
-     * @param userType the role code from {@link WarehouseContext}
-     * @return a list of product views for that role
+     * @param userType the role code: 0 for client, 1 for clerk, or 2 for manager
+     * @return product views for the requested role
+     * @throws IllegalArgumentException if {@code userType} is not a supported role
      */
     public List<ProductView> getProductListView(int userType)
     {
         return switch (userType)
         {
-            case WarehouseContext.CLIENT  -> getProductListViewForCustomer();
-            case WarehouseContext.CLERK   -> getProductListViewForClerk();
-            case WarehouseContext.MANAGER -> getProductListViewForManager();
+            case 0 -> getProductListViewForCustomer();  // Customer
+            case 1 -> getProductListViewForClerk();     // Clerk
+            case 2 -> getProductListViewForManager();   // Manager
             default -> throw new IllegalArgumentException("Invalid user type: " + userType);
         };
     }
-
-    private List<ProductView> getProductListViewForCustomer() 
+    /**
+     * Returns a list of product views for customers (clients).
+     *
+     * @return a list of product views for customers
+     */
+    private List<ProductView> getProductListViewForCustomer()
     {
         List<ProductView> views = new ArrayList<>();
-        for (Product p : catalog.getAllProducts()) 
+        for (Product p : catalog.getAllProducts())
         {
             views.add(new ProductView(p.getID(), p.getName(), p.getPrice()));
         }
         return views;
     }
-
-    private List<ProductView> getProductListViewForClerk() 
+    /**
+     * Returns a list of product views for clerks.
+     *
+     * @return a list of product views for clerks
+     */
+    private List<ProductView> getProductListViewForClerk()
     {
         List<ProductView> views = new ArrayList<>();
-        for (Product p : catalog.getAllProducts()) 
+        for (Product p : catalog.getAllProducts())
         {
             views.add(new ProductView(p.getID(), p.getName(), p.getPrice(), p.getStock()));
         }
         return views;
     }
-
-    private List<ProductView> getProductListViewForManager() 
+    /**
+     * Returns a list of product views for managers.
+     *
+     * @return a list of product views for managers
+     */
+    private List<ProductView> getProductListViewForManager()
     {
         List<ProductView> views = new ArrayList<>();
-        for (Product p : catalog.getAllProducts()) 
+        for (Product p : catalog.getAllProducts())
         {
             views.add(new ProductView(p.getID(), p.getName(), p.getPrice(), p.getStock(), p.getWaitlist()));
         }

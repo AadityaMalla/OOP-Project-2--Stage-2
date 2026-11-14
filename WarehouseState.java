@@ -1,55 +1,81 @@
-import java.awt.FlowLayout;
+import java.awt.*;
 import java.util.Scanner;
 import javax.swing.*;
 
 /**
- * Base class for every state. Holds the shared context and console input, the
- * console input helpers used by the text states, and the frame helpers used by
- * the GUI states.
- *
- * <p>All GUI states share one window. A GUI state's {@code run()} calls
- * {@link #prepareFrame()}, adds its buttons, and calls {@link #showFrame(JFrame)};
- * the window's contents are swapped rather than a new window being opened for
- * every state.</p>
+ * Base class for the role-specific warehouse screens.
+ * <p>WarehouseState is an abstract class that defines the common behavior and interface for different warehouse roles (client, clerk, manager, login). It provides methods for preparing and displaying the shared application window, handling user input, and managing the output area.</p>
+ * @author Aj Johnson, Aaditya Malla. Chidera Izuora
+ * @version 1.0
  */
 public abstract class WarehouseState
 {
+    /** The one FSM context, shared by all states. */
     protected static final WarehouseContext context = WarehouseContext.getInstance();
 
+    /** Shared console reader, for states not yet converted to GUI. */
     protected static final Scanner in = new Scanner(System.in);
 
-    /** The single window shared by all GUI states; created on first use. */
-    private static JFrame frame;
+    protected final JTextArea output = new JTextArea(16, 44);
 
+    /** Builds this state's screen or runs its menu loop. */
     public abstract void run();
 
+
+    /**
+     * Clears the shared window and returns it, ready for this state to add buttons.
+     * @return the prepared frame
+     */
+    protected JFrame prepareFrame()
+    {
+        clearOutput();
+        JFrame frame = context.getFrame();
+        frame.getContentPane().removeAll();
+        frame.getContentPane().setLayout(new FlowLayout());
+        return frame;
+    }
+
+    /**
+     * Shows the shared window after this state has added its components.
+     * @param frame the frame to show
+     */
+    protected void showFrame(JFrame frame)
+    {
+        frame.setVisible(true);
+        frame.revalidate();
+        frame.repaint();
+        frame.toFront();
+    }
+
+    /**
+     * Prompts the user for a command.
+     * @param prompt the prompt to display
+     * @return the user's command
+     */
     protected int getCommand(String prompt)
     {
         while (true)
         {
             System.out.print(prompt);
-            String line = in.nextLine().trim();
-            try { return Integer.parseInt(line); }
+            try { return Integer.parseInt(in.nextLine().trim()); }
             catch (NumberFormatException e) { System.out.println("Please enter a number."); }
         }
     }
-
+    /**
+     * Prompts the user for a token (string).
+     * @param prompt the prompt to display
+     * @return the user's input
+     */
     protected String getToken(String prompt)
     {
         System.out.print(prompt);
         return in.nextLine().trim();
     }
-
-    protected int getQuantity(String prompt)
-    {
-        while (true)
-        {
-            int n = getCommand(prompt);
-            if (n >= 0) return n;
-            System.out.println("Quantity cannot be negative.");
-        }
-    }
-
+    /**
+     * Prompts the user for a yes/no answer.
+     * @param prompt the prompt to display
+     * @return true if the user answered yes, false otherwise
+     */
     protected boolean yesOrNo(String prompt)
     {
         System.out.print(prompt + " (y/n): ");
@@ -57,43 +83,59 @@ public abstract class WarehouseState
     }
 
     /**
-     * Returns the shared window with its contents cleared, ready for a state to
-     * add its buttons. Creates the window the first time it is needed.
-     *
-     * @return the shared window, empty
+     * Prompt for a required text field: re-asks on blank, returns null if cancelled.
+     * @param label the label for the input field
+     * @return the user's input, or null if cancelled
      */
-    protected JFrame prepareFrame()
-    {
-        if (frame == null)
-        {
-            frame = new JFrame();
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.getContentPane().setLayout(new FlowLayout());
+    protected String promptRequired(String label) {
+        while (true) {
+            String value = JOptionPane.showInputDialog(context.getFrame(), label);
+            if (value == null) return null;                 // user cancelled
+            value = value.trim();
+            if (!value.isEmpty()) return value;
+            JOptionPane.showMessageDialog(context.getFrame(), label + " cannot be empty.");
         }
-        frame.getContentPane().removeAll();
-        return frame;
     }
 
     /**
-     * Lays out and shows the window after a state has added its buttons.
-     *
-     * @param f the window returned by {@link #prepareFrame()}
+     * Prompt for a whole number: re-asks on bad input, returns null if cancelled.
+     * @param label the label for the input field
+     * @return the user's input, or null if cancelled
      */
-    protected void showFrame(JFrame f)
-    {
-        f.setSize(650, 160);
-        f.setLocationRelativeTo(null);
-        f.revalidate();
-        f.repaint();
-        f.setVisible(true);
+    protected Integer promptInt(String label) {
+        while (true) {
+            String value = JOptionPane.showInputDialog(context.getFrame(), label);
+            if (value == null) return null;
+            try { return Integer.parseInt(value.trim()); }
+            catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(context.getFrame(), label + " must be a whole number.");
+            }
+        }
+    }
+    /**
+     * Prompt for a decimal number: re-asks on bad input, returns null if cancelled.
+     * @param label the label for the input field
+     * @return the user's input, or null if cancelled
+     */
+    protected Double promptDouble(String label) {
+        while (true) {
+            String value = JOptionPane.showInputDialog(context.getFrame(), label);
+            if (value == null) return null;
+            try { return Double.parseDouble(value.trim()); }
+            catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(context.getFrame(), label + " must be a number.");
+            }
+        }
     }
 
     /**
-     * Hides the shared window, for when the program moves from a GUI state to
-     * a text-based state.
+     * Displays text in the output area.
+     * @param text the text to display
      */
-    protected void hideFrame()
-    {
-        if (frame != null) frame.setVisible(false);
-    }
+    protected void display(String text) { output.setText(text); }
+
+    /**
+     * Clears the output area.
+     */
+    protected void clearOutput() { output.setText(""); }
 }
