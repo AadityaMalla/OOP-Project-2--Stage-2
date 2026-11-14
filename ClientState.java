@@ -1,198 +1,143 @@
-import java.awt.*;
-import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.*;
 
 /**
- * Screen and actions available to a warehouse client.
- * @author Aj Johnson, Aaditya Malla. Chidera Izuora
- * @version 1.0
+ * The client menu state. Shows the logged-in client's details, the product
+ * list, and transactions, and places orders. Wishlist editing has moved to
+ * {@link WishlistState}, reached through the "Wishlist Operations" command.
  */
 public class ClientState extends WarehouseState
 {
     private static ClientState instance;
     private final Warehouse warehouse = Warehouse.getInstance();
 
-    /**
-     * Private constructor to enforce singleton pattern.
-     */
-    private ClientState() { super(); }
+    private static final int LOGOUT = 0;
+    private static final int CLIENT_DETAILS = 1;
+    private static final int SHOW_PRODUCT_LIST = 2;
+    private static final int SHOW_CLIENT_TRANSACTIONS = 3;
+    private static final int WISHLIST_OPS = 4;
+    private static final int PLACE_ORDER = 5;
+    private static final int HELP = 6;
 
-    /**
-     * Returns the singleton instance of ClientState.
-     * @return the singleton instance of ClientState
-     */
-    public static ClientState getInstance()
-    {
-        if (instance == null) instance = new ClientState();
+    private ClientState() {
+        super();
+    }
+
+    public static ClientState getInstance() {
+        if (instance == null) {
+            instance = new ClientState();
+        }
         return instance;
     }
 
-    /**
-     * Displays the client interface, allowing the user to view details, products,
-     * transactions, manage their wishlist, and place orders.
-     */
-    @Override
-    public void run()
+    public void help() {
+        System.out.println("Client State Help:");
+        System.out.println("1. View Client Details");
+        System.out.println("2. Show Product List");
+        System.out.println("3. Show Client Transactions");
+        System.out.println("4. Wishlist Operations (view, add, remove, change quantity)");
+        System.out.println("5. Place Order");
+        System.out.println("0. Logout");
+    }
+
+    public void getClientDetails()
     {
-        JFrame frame = prepareFrame();
-        frame.setTitle("Warehouse - Client " + context.getUser());
-        frame.getContentPane().setLayout(new BorderLayout());   // buttons on top, output below
+        String userID = context.getUser();
+        Client client = warehouse.getClient(userID);
+        if (client != null) {
+            System.out.println("Client ID: " + client.getID());
+            System.out.println("Name: " + client.getName());
+            System.out.println("Address: " + client.getAddress());
+        } else {
+            System.out.println("Client not found.");
+        }
+    }
 
-        JPanel buttons = new JPanel(new FlowLayout());
-        buttons.add(new DetailsButton());
-        buttons.add(new ProductsButton());
-        buttons.add(new TransactionsButton());
-        buttons.add(new AddWishlistButton());
-        buttons.add(new ShowWishlistButton());
-        buttons.add(new PlaceOrderButton());
-        buttons.add(new LogoutButton());
+    public void showProductList() {
+        List<ProductView> productViews = warehouse.getProductListView(WarehouseContext.CLIENT);
+        if (productViews.isEmpty()) { System.out.println("No products available."); return; }
+        for (ProductView pv : productViews) {
+            System.out.println(pv.clientString());
+        }
+    }
 
-        output.setEditable(false);
-        frame.getContentPane().add(buttons, BorderLayout.NORTH);
-        frame.getContentPane().add(new JScrollPane(output), BorderLayout.CENTER);
-        showFrame(frame);
+    public void showClientTransactions() {
+        List<Transaction> transactions = warehouse.getClientTransactions(context.getUser());
+        if (transactions == null) {
+            System.out.println("Client not found.");
+        } else if (transactions.isEmpty()) {
+            System.out.println("No transactions found for this client.");
+        } else {
+            for (Transaction t : transactions) {
+                System.out.println(t);
+            }
+        }
     }
 
     /**
-     * Prepares the frame for the client state.
-     *
-     * @return the prepared JFrame
+     * Moves to the wishlist-operations state. Uses {@code become} so that
+     * leaving that state returns here.
      */
-    private void showClientDetails()
-    {
-        Client client = warehouse.getClient(context.getUser());
-        if (client == null) { display("Client not found."); return; }
-        display("Client ID: " + client.getID()
-              + "\nName: "    + client.getName()
-              + "\nAddress: " + client.getAddress());
+    public void wishlistOperations() {
+        context.become(WarehouseContext.WISHLIST, context.getUser());
     }
 
-    /**
-     * Displays a list of all products available in the warehouse.
-     */
-    private void showProductList()
-    {
-        List<ProductView> views = warehouse.getProductListView(WarehouseContext.CLIENT);
-        if (views.isEmpty()) { display("No products available."); return; }
-        StringBuilder sb = new StringBuilder("Products:\n");
-        for (ProductView pv : views) sb.append(pv.clientString()).append("\n");
-        display(sb.toString());
-    }
-
-    /**
-     * Displays a list of all transactions for the current client.
-     */
-    private void showClientTransactions()
-    {
-        Client client = warehouse.getClient(context.getUser());
-        if (client == null) { display("Client not found."); return; }
-        List<Transaction> ts = client.getTransactions();
-        if (ts.isEmpty()) { display("No transactions found for this client."); return; }
-        StringBuilder sb = new StringBuilder("Transactions:\n");
-        for (Transaction t : ts) sb.append(t).append("\n");
-        display(sb.toString());
-    }
-
-    /**
-     * Adds an item to the current client's wishlist.
-     */
-    private void addItemToWishlist() {
-        String productID = promptRequired("Enter product ID:");
-        if (productID == null) return;                 // cancelled
-        Integer qty = promptInt("Enter quantity:", 1);
-        if (qty == null) return;                        // cancelled
-
-        boolean ok = warehouse.addToWishlist(context.getUser(), productID, qty);
-        display(ok ? "Product added to wishlist. Product ID: " + productID : "Error: client or product not found.");
-    }
-
-    /**
-     * Displays the current client's wishlist.
-     */
-    private void showWishlist()
-    {
-        Client client = warehouse.getClient(context.getUser());
-        if (client == null) { display("Client not found."); return; }
-        List<WishlistItem> wishlist = client.getWishListItems();
-        if (wishlist.isEmpty()) { display("Wishlist is empty."); return; }
-        StringBuilder sb = new StringBuilder("Wishlist:\n");
-        for (WishlistItem item : wishlist) sb.append(item).append("\n");
-        display(sb.toString());
-    }
-
-    /**
-     * Places an order for items in the current client's wishlist.
-     */
-    private void placeOrder()
-    {
-        List<WishlistItem> wishlist = warehouse.getClientWishlist(context.getUser());
-        if (wishlist == null) { display("Client not found."); return; }
-        if (wishlist.isEmpty()) { display("Wishlist is empty."); return; }
+    public void placeOrder() {
+        String userID = context.getUser();
+        List<WishlistItem> wishlist = warehouse.getClientWishlist(userID);
+        if (wishlist == null)
+        {
+            System.out.println("Client not found.");
+            return;
+        }
+        if (wishlist.isEmpty())
+        {
+            System.out.println("Wishlist is empty.");
+            return;
+        }
 
         List<OrderLine> lines = new ArrayList<>();
-        for (WishlistItem w : wishlist) {
-            display(w.toString());
-            String confirmation = promptRequired("Order item " + w.getProductID() + "? (y/n) (enter 0 to exit): ");
-            if (confirmation == null || confirmation.equals("0")) return;
-            boolean order = confirmation.equalsIgnoreCase("y");
-            if (!order) continue;
-
-            Integer quantity = promptInt("Enter quantity:", 0);
-            if (quantity == null) return;
-            lines.add(new OrderLine(w.getProductID(), quantity));
+        for (WishlistItem w : wishlist)
+        {
+            System.out.println(w);
+            if (!yesOrNo("Order this item?")) continue;
+            int qty = getQuantity("Enter quantity: ");
+            lines.add(new OrderLine(w.getProductID(), qty));
         }
-        display(warehouse.createOrder(context.getUser(), lines));
+        String summary = warehouse.createOrder(userID, lines);
+        System.out.println(summary);
     }
 
-    /**
-     * Button to display client details.
-     */
-    private class DetailsButton extends JButton implements ActionListener {
-        DetailsButton() { super("Client details"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { showClientDetails(); }
+    public void exit()
+    {
+        System.out.println("Exiting Client State.");
+        context.logout();
     }
-    /**
-     * Button to display the product list.
-     */
-    private class ProductsButton extends JButton implements ActionListener {
-        ProductsButton() { super("Show products"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { showProductList(); }
-    }
-    /**
-     * Button to display client transactions.
-     */
-    private class TransactionsButton extends JButton implements ActionListener {
-        TransactionsButton() { super("Transactions"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { showClientTransactions(); }
-    }
-    /**
-     * Button to add an item to the wishlist.
-     */
-    private class AddWishlistButton extends JButton implements ActionListener {
-        AddWishlistButton() { super("Add to wishlist"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { addItemToWishlist(); }
-    }
-    /**
-     * Button to display the wishlist.
-     */
-    private class ShowWishlistButton extends JButton implements ActionListener {
-        ShowWishlistButton() { super("Show wishlist"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { showWishlist(); }
-    }
-    /**
-     * Button to place an order for items in the wishlist.
-     */
-    private class PlaceOrderButton extends JButton implements ActionListener {
-        PlaceOrderButton() { super("Place order"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { placeOrder(); }
-    }
-    /**
-     * Button to log out and return to the login state.
-     */
-    private class LogoutButton extends JButton implements ActionListener {
-        LogoutButton() { super("Logout"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { context.logout(); }
+
+    @Override
+    public void run() {
+        boolean running = true;
+        while (running) {
+            int choice = getCommand("\nClient Menu (client " + context.getUser() + "):\n" +
+                    "1. View Client Details\n" +
+                    "2. Show Product List\n" +
+                    "3. Show Client Transactions\n" +
+                    "4. Wishlist Operations\n" +
+                    "5. Place Order\n" +
+                    "6. Help\n" +
+                    "0. Logout\n" +
+                    "Enter command: ");
+
+            switch (choice) {
+                case CLIENT_DETAILS -> getClientDetails();
+                case SHOW_PRODUCT_LIST -> showProductList();
+                case SHOW_CLIENT_TRANSACTIONS -> showClientTransactions();
+                case WISHLIST_OPS -> { wishlistOperations(); running = false; }
+                case PLACE_ORDER -> placeOrder();
+                case HELP -> help();
+                case LOGOUT -> { exit(); running = false; }
+                default -> System.out.println("Invalid choice. Please try again.");
+            }
+        }
     }
 }

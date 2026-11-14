@@ -10,13 +10,7 @@ public class WishlistView
     private final int stock; // the number of units currently on hand for the product
 
     /**
-     * Creates a view of one item in a client's wishlist.
-     *
-     * @param productID the product ID
-     * @param productName the product name
-     * @param price the product price
-     * @param wishlistQuantity the quantity requested by the client
-     * @param stock the current stock
+     * Creates a new WishlistView object with the specified information.
      */
     public WishlistView(String productID, String productName, double price,
                         int wishlistQuantity, int stock)

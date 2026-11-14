@@ -82,6 +82,41 @@ public class ClientList
     }
 
     /**
+     * Removes a product from a client's wishlist.
+     *
+     * @param clientID  the id of the client
+     * @param productID the id of the product to remove
+     * @return {@code true} if the entry was removed; {@code false} if no client
+     *         has the given id or the product is not on the wishlist
+     */
+    public boolean removeClientWishlistEntry(String clientID, String productID)
+    {
+        Client c = searchForClient(clientID);
+        if (c == null || c.getWishlistQuantity(productID) == 0)
+            return false;
+        c.removeWishlistEntry(productID);
+        return true;
+    }
+
+    /**
+     * Sets the quantity of a product already on a client's wishlist.
+     *
+     * @param clientID  the id of the client
+     * @param productID the id of the product on the wishlist
+     * @param quantity  the new quantity
+     * @return {@code true} if the quantity was changed; {@code false} if no
+     *         client has the given id or the product is not on the wishlist
+     */
+    public boolean setClientWishlistQuantity(String clientID, String productID, int quantity)
+    {
+        Client c = searchForClient(clientID);
+        if (c == null || c.getWishlistQuantity(productID) == 0)
+            return false;
+        c.setWishlistQuantity(productID, quantity);
+        return true;
+    }
+
+    /**
      * Returns every registered client, in the order they were added.
      *
      * <p>The returned list is a copy, so adding to or removing from it does not

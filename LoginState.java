@@ -1,119 +1,64 @@
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-
-/**
- * Login screen for selecting a warehouse role.
- *
- * @author Aj Johnson, Aaditya Malla, Chidera Izuora
- * @version 1.0
- */
-public class LoginState extends WarehouseState
+public class LoginState extends WarehouseState 
 {
     private static LoginState instance;
     private final Warehouse warehouse = Warehouse.getInstance();
 
-    private LoginState() { super(); }
+    private static final int QUIT = 0;
+    private static final int LOGIN_CLIENT = 1;
+    private static final int LOGIN_CLERK = 2;
+    private static final int LOGIN_MANAGER = 3;
+    private static final int HELP = 4;
 
-    /**
-     * Returns the singleton instance of LoginState.
-     * @return the singleton instance of LoginState
-     */
-    public static LoginState getInstance()
-    {
-        if (instance == null) instance = new LoginState();
+    private LoginState() {
+        super();
+    }
+
+    public static LoginState getInstance() {
+        if (instance == null) {
+            instance = new LoginState();
+        }
         return instance;
     }
 
-    /**
-     * Build the login screen on the shared window. Event-driven: no loop.
-     * @param frame the frame to build the login screen on
-     */
     @Override
-    public void run()
-    {
-        JFrame frame = prepareFrame();
-        frame.setTitle("Warehouse - Login");
-        JPanel buttonsPanel = new JPanel(new FlowLayout());
-
-        buttonsPanel.add(new ClientLoginButton());
-        buttonsPanel.add(new ClerkLoginButton());
-        buttonsPanel.add(new ManagerLoginButton());
-        buttonsPanel.add(new QuitButton());
-
-        frame.getContentPane().add(buttonsPanel, BorderLayout.NORTH);
-
-        showFrame(frame);
-    }
-
-    /**
-     * Logs in as a client.
-     */
-    private void loginClient()
-    {
-        String id = JOptionPane.showInputDialog(context.getFrame(), "Enter client ID:");
-        if (id == null) return;                 // user cancelled the dialog
-        id = id.trim();
-        if (warehouse.getClient(id) == null)
+    public void run() {
+        boolean active = true;
+        while(active)
         {
-            JOptionPane.showMessageDialog(context.getFrame(), "Client not found.");
-            return;                             // stay on the login screen
+            int command = getCommand("Login Menu:\n" +
+                    "1. Login as Client\n" +
+                    "2. Login as Clerk\n" +
+                    "3. Login as Manager\n" +
+                    "4. Help\n" +
+                    "0. Quit\n" +
+                    "Enter command: ");
+
+            switch (command) {
+                case LOGIN_CLIENT -> { if (loginClient()) active = false; }
+                case LOGIN_CLERK -> { context.login(WarehouseContext.CLERK, null); active = false; }
+                case LOGIN_MANAGER -> { context.login(WarehouseContext.MANAGER, null); active = false; }
+                case HELP -> help();
+                case QUIT -> { context.terminate(); active = false; }
+                default -> System.out.println("Invalid command. Please try again.");
+            }
         }
-        context.login(WarehouseContext.CLIENT, id);
     }
 
-    /**
-     * Logs in as a clerk.
-     */
-    private void loginClerk()   { context.login(WarehouseContext.CLERK, null); }
-    /**
-     * Logs in as a manager.
-     */
-    private void loginManager() { context.login(WarehouseContext.MANAGER, null); }
-    /**
-     * Quits the application.
-     */
-    private void quit()         { context.changeState(WarehouseContext.TERMINATE); }
-
-    /**
-     * Prepares the frame for the login state.
-     *
-     * @return the prepared JFrame
-     */
-    private class ClientLoginButton extends JButton implements ActionListener
-    {
-        ClientLoginButton() { super("Login as Client"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { loginClient(); }
+    private boolean loginClient(){
+        String userID = getToken("Enter Client ID: ");
+        if (warehouse.getClient(userID) == null) {
+            System.out.println("Client ID not found.");
+            return false;
+        }
+        context.login(context.CLIENT, userID);
+        return true;
     }
 
-    /**
-     * Prepares the frame for the login state.
-     *
-     * @return the prepared JFrame
-     */
-    private class ClerkLoginButton extends JButton implements ActionListener
-    {
-        ClerkLoginButton() { super("Login as Clerk"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { loginClerk(); }
-    }
-    /**
-     * Prepares the frame for the login state.
-     *
-     * @return the prepared JFrame
-     */
-    private class ManagerLoginButton extends JButton implements ActionListener
-    {
-        ManagerLoginButton() { super("Login as Manager"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { loginManager(); }
-    }
-   /**
-     * Prepares the frame for the login state.
-     *
-     * @return the prepared JFrame
-     */
-    private class QuitButton extends JButton implements ActionListener
-    {
-        QuitButton() { super("Quit"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { quit(); }
+    public void help() {
+        System.out.println("Login State Help:");
+        System.out.println("1. Login as Client");
+        System.out.println("2. Login as Clerk");
+        System.out.println("3. Login as Manager");
+        System.out.println("0. Quit");
     }
 }

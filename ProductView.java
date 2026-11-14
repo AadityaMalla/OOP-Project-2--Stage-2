@@ -1,11 +1,5 @@
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * Read-only display data for a product, tailored to a user's view.
- * @author Aj Johnson, Aaditya Malla. Chidera Izuora
- * @version 1.0
- */
 public class ProductView
 {
     private final String productID; // the id of the product being viewed
@@ -15,11 +9,7 @@ public class ProductView
     private final List<WaitlistItem> waitlist = new ArrayList<>();
 
     /**
-     * Creates a customer-facing product view without stock information.
-     *
-     * @param productID the product ID
-     * @param name the product name
-     * @param price the product price
+     * Creates a new ProductView object with the specified information.
      */
     public ProductView(String productID, String name, double price)
     {
@@ -29,14 +19,6 @@ public class ProductView
         this.stock = 0; // Default stock value for views
     }
 
-    /**
-     * Creates a clerk-facing product view.
-     *
-     * @param productID the product ID
-     * @param name the product name
-     * @param price the product price
-     * @param stock the current stock
-     */
     public ProductView(String productID, String name, double price, int stock)
     {
         this.productID = productID;
@@ -45,15 +27,6 @@ public class ProductView
         this.stock = stock;
     }
 
-    /**
-     * Creates a product view including its waitlist.
-     *
-     * @param productID the product ID
-     * @param name the product name
-     * @param price the product price
-     * @param stock the current stock
-     * @param waitlist the waitlist entries to display
-     */
     public ProductView(String productID, String name, double price, int stock, List<WaitlistItem> waitlist)
     {
         this.productID = productID;
@@ -63,21 +36,11 @@ public class ProductView
         this.waitlist.addAll(waitlist);
     }
 
-    /**
-     * Formats this view for a client.
-     *
-     * @return the client-facing product description
-     */
     public String clientString()
     {
         return String.format("ID=%s, Name=%s, Price=$%.2f", productID, name, price);
     }
 
-    /**
-     * Formats this view for a clerk.
-     *
-     * @return the clerk-facing product description
-     */
     public String clerkString()
     {
         return String.format("ID=%s, Name=%s, Price=$%.2f, Stock=%d", productID, name, price, stock);
@@ -104,10 +67,5 @@ public class ProductView
      */
     public int getStock()              { return stock; }
 
-    /**
-     * Returns the waitlist entries included in this view.
-     *
-     * @return the view's waitlist
-     */
     public List<WaitlistItem> getWaitlist() { return waitlist; }
 }

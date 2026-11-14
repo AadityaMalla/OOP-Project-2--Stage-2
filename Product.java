@@ -12,10 +12,8 @@ import java.util.List;
  * <p>The product owns its <em>waitlist</em>: when an order asks for more units
  * than are in stock, the shortfall is recorded here as a {@link WaitlistItem},
  * and a later shipment fills those entries in the order the clients joined.</p>
- * @author Aj Johnson, Aaditya Malla. Chidera Izuora
- * @version 1.0
  */
-public class Product
+public class Product 
 {
     /** Last id number handed out; shared by all products so ids are unique. */
     private static int nextID = 2000;
@@ -42,7 +40,7 @@ public class Product
      * @param price the unit sale price in dollars
      * @param stock the number of units initially on hand
      */
-    public Product(String name, double price, int stock)
+    public Product(String name, double price, int stock) 
     {
         this.productID = "P" + (++nextID);
         this.name = name;
@@ -60,7 +58,7 @@ public class Product
      * @param price     the unit sale price in dollars
      * @param stock     the number of units on hand
      */
-    public Product(String productID, String name, double price, int stock)
+    public Product(String productID, String name, double price, int stock) 
     {
         this.productID = productID;
         this.name = name;
@@ -75,7 +73,7 @@ public class Product
      *
      * @param id an existing product id whose number must not be handed out again
      */
-    private static void syncCounter(String id)
+    private static void syncCounter(String id) 
     {
         try {
             int n = Integer.parseInt(id.replaceAll("\\D", ""));
@@ -88,9 +86,9 @@ public class Product
      *
      * @return the name
      */
-    public String getName()
-    {
-        return name;
+    public String getName() 
+    { 
+        return name; 
     }
 
     /**
@@ -98,9 +96,9 @@ public class Product
      *
      * @return the price in dollars
      */
-    public double getPrice()
-    {
-        return price;
+    public double getPrice() 
+    { 
+        return price; 
     }
 
     /**
@@ -108,9 +106,9 @@ public class Product
      *
      * @return the stock level
      */
-    public int getStock()
-    {
-        return stock;
+    public int getStock() 
+    { 
+        return stock; 
     }
 
     /**
@@ -118,9 +116,9 @@ public class Product
      *
      * @return the product id
      */
-    public String getID()
-    {
-        return productID;
+    public String getID() 
+    { 
+        return productID; 
     }
 
     /**
@@ -128,9 +126,9 @@ public class Product
      *
      * @param name the new name
      */
-    public void setName(String name)
-    {
-        this.name = name;
+    public void setName(String name) 
+    { 
+        this.name = name; 
     }
 
     /**
@@ -138,9 +136,9 @@ public class Product
      *
      * @param price the new price in dollars
      */
-    public void setPrice(double price)
-    {
-        this.price = price;
+    public void setPrice(double price) 
+    { 
+        this.price = price; 
     }
 
     /**
@@ -149,9 +147,9 @@ public class Product
      *
      * @param stock the new stock level
      */
-    public void setStock(int stock)
-    {
-        this.stock = stock;
+    public void setStock(int stock) 
+    { 
+        this.stock = stock; 
     }
 
     /**
@@ -186,12 +184,6 @@ public class Product
     {
         waitlist.removeAll(entries);
     }
-
-    /**
-     * Returns a copy of the clients currently waiting for this product.
-     *
-     * @return the product's waitlist entries in FIFO order
-     */
     public List<WaitlistItem> getWaitlist() { return new ArrayList<>(waitlist); }
 
 }

@@ -1,29 +1,23 @@
-import java.awt.*;
-import java.awt.event.*;
 import java.util.List;
-import javax.swing.*;
 
-/**
- * Screen and actions available to a warehouse clerk.
- *
- * @author Aj Johnson, Aaditya Malla. Chidera Izuora
- * @version 1.0
- */
-public class ClerkState extends WarehouseState
+public class ClerkState extends WarehouseState 
 {
     private static ClerkState instance;
     private final Warehouse warehouse = Warehouse.getInstance();
-    /**
-     * Private constructor to enforce singleton pattern.
-     */
+
+    private static final int LOGOUT = 0;
+    private static final int ADD_CLIENT = 1;
+    private static final int VIEW_PRODUCT_LIST = 2;
+    private static final int VIEW_CLIENT_LIST = 3;
+    private static final int VIEW_OUTSTANDING = 4;
+    private static final int RECORD_PAYMENT = 5;
+    private static final int BECOME_CLIENT = 6;
+    private static final int HELP = 7;
+
     private ClerkState() {
         super();
     }
 
-    /**
-     * Returns the singleton instance of ClerkState.
-     * @return the singleton instance of ClerkState
-     */
     public static ClerkState getInstance() {
         if (instance == null) {
             instance = new ClerkState();
@@ -31,186 +25,118 @@ public class ClerkState extends WarehouseState
         return instance;
     }
 
-    /**
-     * Transitions the user to the client state.
-     * @param clientID the ID of the client to transition to
-     */
-    private void becomeClient() {
-        String clientID = promptRequired("Enter client ID:");
-        if (clientID == null) { display("Become client cancelled."); return; }
-        if (warehouse.getClient(clientID) == null) { display("Client not found."); return; }
-        context.become(WarehouseContext.CLIENT, clientID);
-    }
+    @Override
+    public void run() {
+        boolean active = true;
+        while(active)
+        {
+            int command = getCommand("Clerk Menu:\n" +
+                    "1. Add Client\n" +
+                    "2. View Product List\n" +
+                    "3. View Client List\n" +
+                    "4. View Outstanding Balance Clients\n" +
+                    "5. Record Client Payment\n" +
+                    "6. Become Client\n" +
+                    "7. Help\n" +
+                    "0. Logout\n" +
+                    "Enter command: ");
 
-   /**
-    * Prompts the user for client information and adds a new client to the warehouse.
-    */
-   public void addClient() {
-    String name = promptRequired("Enter client name:");
-    if (name == null) { display("Add client cancelled."); return; }
+            switch (command) {
+                case ADD_CLIENT -> addClient();
+                case VIEW_PRODUCT_LIST -> viewProductList();
+                case VIEW_CLIENT_LIST -> viewClientList();
+                case VIEW_OUTSTANDING -> viewOutstandingBalanceClients();
+                case RECORD_PAYMENT -> recordClientPayment();
+                case BECOME_CLIENT -> { if (becomeClient()) active = false; }
+                case HELP -> help();
+                case LOGOUT -> { exit(); active = false; }
+                default -> System.out.println("Invalid command. Please try again.");
 
-    String address = promptRequired("Enter client address:");
-    if (address == null) { display("Add client cancelled."); return; }
-
-    String id = warehouse.addClient(name, address);   // warehouse generates the ID
-    display("Client added:\nID: " + id + "\nName: " + name + "\nAddress: " + address);
-    }
-
-    /**
-     * Displays a list of all products available in the warehouse.
-     */
-    public void viewProductList() {
-        List<ProductView> products = warehouse.getProductListView(WarehouseContext.CLERK);
-        if (products.isEmpty()) { display("No products available."); return; }
-        StringBuilder sb = new StringBuilder("Products:\n");
-        for (ProductView pv : products) sb.append(pv.clerkString()).append("\n");
-        display(sb.toString());                    // one setText, with the full list
-    }
-
-    /**
-     * Displays a list of all clients in the warehouse.
-     * If there are no clients, a message indicating this is displayed instead.
-     */
-    public void viewClientList() {
-        List<Client> all = warehouse.getAllClients();
-        if (all.isEmpty()) { display("No clients available."); return; }
-        StringBuilder sb = new StringBuilder("Clients:\n");
-        for (Client c : all)
-            sb.append(String.format("ID=%s, Name=%s, Address=%s, Balance=$%.2f%n",
-                    c.getID(), c.getName(), c.getAddress(), c.getBalance()));
-        display(sb.toString());
-    }
-
-    /**
-     * Displays clients whose account balance is below zero.
-     */
-    public void viewOutstandingBalanceClients() {
-        List<Client> all = warehouse.getAllClients();
-        StringBuilder sb = new StringBuilder("Clients with outstanding balance:\n");
-        boolean found = false;
-        for (Client c : all) {
-            if (c.getBalance() < 0) {
-                sb.append(String.format("ID=%s, Name=%s, Address=%s, Balance=$%.2f%n",
-                        c.getID(), c.getName(), c.getAddress(), c.getBalance()));
-                found = true;
             }
         }
-        display(found ? sb.toString() : "No clients with outstanding balances.");
     }
 
-    /**
-     * Prompts for and records a client payment.
-     */
-    public void recordClientPayment() {
-        String clientID = promptRequired("Enter client ID: ");
-        if (clientID == null) {
-            display("Payment cancelled.");
-            return;
+    private boolean becomeClient() {
+        String clientID = getToken("Enter Client ID: ");
+        if (warehouse.getClient(clientID) == null){
+            System.out.println("Client not found.");
+            return false;
         }
+        context.become(WarehouseContext.CLIENT, clientID);
+        return true;
+    }
+    
 
-        Double amount = promptDouble("Enter payment amount: ");
-        if (amount == null) {
-            display("Payment cancelled.");
-            return;
-        }
-
-        display(warehouse.receivePayment(clientID, amount));
+    public void help() {
+        System.out.println("Clerk State Help:");
+        System.out.println("1. Add Client");
+        System.out.println("2. View Product List");
+        System.out.println("3. View Client List");
+        System.out.println("4. View Outstanding Balance Clients");
+        System.out.println("5. Record Client Payment");
+        System.out.println("6. Become Client");
+        System.out.println("0. Exit");
     }
 
-    /**
-     * Logs out of the clerk state.
-     */
     public void exit() {
-        display("Exiting Clerk State.\n");
+        System.out.println("Exiting Clerk State.");
         context.logout();
     }
 
-    /**
-     * Runs the clerk state, displaying the GUI with available actions.
-     */
-    @Override
-    public void run() {
-        JFrame frame = prepareFrame();
-        frame.setTitle("Warehouse - Clerk");
-        frame.getContentPane().setLayout(new BorderLayout());   // buttons on top, output below
-
-        JPanel buttons = new JPanel(new FlowLayout());
-        buttons.add(new AddClientButton());
-        buttons.add(new ViewProductListButton());
-        buttons.add(new ViewClientListButton());
-        buttons.add(new ViewOutstandingBalanceClientsButton());
-        buttons.add(new RecordClientPaymentButton());
-        buttons.add(new BecomeClientButton());
-        buttons.add(new LogoutButton());
-
-        output.setEditable(false);
-        frame.getContentPane().add(buttons, BorderLayout.NORTH);
-        frame.getContentPane().add(new JScrollPane(output), BorderLayout.CENTER);
-        showFrame(frame);
+    public void addClient(){
+        System.out.print("Enter name: ");    String name = in.nextLine();
+        System.out.print("Enter address: "); String address = in.nextLine();
+        String id = warehouse.addClient(name, address);
+        System.out.println("Client added: ID=" + id + ", Name=" + name + ", Address=" + address);
     }
 
-    /**
-     * Prepares the frame for the clerk state.
-     *
-     * @return the prepared JFrame
-     */
-    private class LogoutButton extends JButton implements ActionListener
-    {
-        LogoutButton() { super("Logout"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { exit(); }
+    public void viewProductList() {
+        List<ProductView> productViews = warehouse.getProductListView(WarehouseContext.CLERK);
+        for (ProductView pv : productViews) {
+            System.out.println(pv.clerkString());
+        }
     }
 
-    /**
-     * Button to add a new client.
-     */
-    private class AddClientButton extends JButton implements ActionListener
+    public void viewClientList() {
+        List<Client> all = warehouse.getAllClients();
+        if (all.isEmpty()) { System.out.println("No clients available."); return; }
+        for (Client c : all)
+            System.out.printf("ID=%s, Name=%s, Address=%s, Balance=$%.2f%n",
+                    c.getID(), c.getName(), c.getAddress(), c.getBalance()); 
+        }
+
+    public void viewOutstandingBalanceClients() 
     {
-        AddClientButton() { super("Add Client"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { addClient(); }
+        List<Client> all = warehouse.getAllClients();
+        boolean found = false;
+        for (Client c : all) {
+            if (c.getBalance() < 0) {
+                System.out.printf("ID=%s, Name=%s, Address=%s, Balance=$%.2f%n",
+                        c.getID(), c.getName(), c.getAddress(), c.getBalance());
+                found = true;
+            }
+        }
+        if (!found) {
+            System.out.println("No clients with outstanding balances.");
+        }
     }
 
-    /**
-     * Button to view the product list.
-     */
-    private class ViewProductListButton extends JButton implements ActionListener
-    {
-        ViewProductListButton() { super("View Product List"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { viewProductList(); }
-    }
+    public void recordClientPayment() {
+        System.out.print("Enter client ID: ");
+        String clientID = in.nextLine().trim();
 
-    /**
-     * Button to view the list of all clients.
-     */
-    private class ViewClientListButton extends JButton implements ActionListener
-    {
-        ViewClientListButton() { super("View Client List"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { viewClientList(); }
-    }
+        System.out.print("Enter payment amount: ");
+        double amount;
+        try
+        {
+            amount = Double.parseDouble(in.nextLine().trim());
+        }
+        catch (NumberFormatException e)
+        {
+            System.out.println("Not a valid amount.");
+            return;
+        }
 
-    /**
-     * Button to view clients with outstanding balances.
-     */
-    private class ViewOutstandingBalanceClientsButton extends JButton implements ActionListener
-    {
-        ViewOutstandingBalanceClientsButton() { super("View Outstanding Balance Clients"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { viewOutstandingBalanceClients(); }
-    }
-
-    /**
-     * Button to record a client payment.
-     */
-    private class RecordClientPaymentButton extends JButton implements ActionListener
-    {
-        RecordClientPaymentButton() { super("Record Client Payment"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { recordClientPayment(); }
-    }
-
-    /**
-     * Button to transition to the client state.
-     */
-    private class BecomeClientButton extends JButton implements ActionListener
-    {
-        BecomeClientButton() { super("Become Client"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { becomeClient(); }
+        System.out.println(warehouse.receivePayment(clientID, amount));
     }
 }
