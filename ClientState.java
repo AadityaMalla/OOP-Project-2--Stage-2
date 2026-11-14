@@ -31,7 +31,7 @@ public class ClientState extends WarehouseState
 
     /**
      * Displays the client interface, allowing the user to view details, products,
-     * transactions, manage their wishlist, and place orders.
+     * transactions, open the wishlist screen, and place orders.
      */
     @Override
     public void run()
@@ -44,8 +44,7 @@ public class ClientState extends WarehouseState
         buttons.add(new DetailsButton());
         buttons.add(new ProductsButton());
         buttons.add(new TransactionsButton());
-        buttons.add(new AddWishlistButton());
-        buttons.add(new ShowWishlistButton());
+        buttons.add(new WishlistOperationsButton());
         buttons.add(new PlaceOrderButton());
         buttons.add(new LogoutButton());
 
@@ -96,30 +95,12 @@ public class ClientState extends WarehouseState
     }
 
     /**
-     * Adds an item to the current client's wishlist.
+     * Moves to the wishlist screen. Uses {@code become} so that the wishlist
+     * screen's "Back to client menu" button returns here.
      */
-    private void addItemToWishlist() {
-        String productID = promptRequired("Enter product ID:");
-        if (productID == null) return;                 // cancelled
-        Integer qty = promptInt("Enter quantity:", 1);
-        if (qty == null) return;                        // cancelled
-
-        boolean ok = warehouse.addToWishlist(context.getUser(), productID, qty);
-        display(ok ? "Product added to wishlist. Product ID: " + productID : "Error: client or product not found.");
-    }
-
-    /**
-     * Displays the current client's wishlist.
-     */
-    private void showWishlist()
+    private void wishlistOperations()
     {
-        Client client = warehouse.getClient(context.getUser());
-        if (client == null) { display("Client not found."); return; }
-        List<WishlistItem> wishlist = client.getWishListItems();
-        if (wishlist.isEmpty()) { display("Wishlist is empty."); return; }
-        StringBuilder sb = new StringBuilder("Wishlist:\n");
-        for (WishlistItem item : wishlist) sb.append(item).append("\n");
-        display(sb.toString());
+        context.become(WarehouseContext.WISHLIST, context.getUser());
     }
 
     /**
@@ -168,18 +149,11 @@ public class ClientState extends WarehouseState
         @Override public void actionPerformed(ActionEvent e) { showClientTransactions(); }
     }
     /**
-     * Button to add an item to the wishlist.
+     * Button to open the wishlist screen.
      */
-    private class AddWishlistButton extends JButton implements ActionListener {
-        AddWishlistButton() { super("Add to wishlist"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { addItemToWishlist(); }
-    }
-    /**
-     * Button to display the wishlist.
-     */
-    private class ShowWishlistButton extends JButton implements ActionListener {
-        ShowWishlistButton() { super("Show wishlist"); addActionListener(this); }
-        @Override public void actionPerformed(ActionEvent e) { showWishlist(); }
+    private class WishlistOperationsButton extends JButton implements ActionListener {
+        WishlistOperationsButton() { super("Wishlist operations"); addActionListener(this); }
+        @Override public void actionPerformed(ActionEvent e) { wishlistOperations(); }
     }
     /**
      * Button to place an order for items in the wishlist.

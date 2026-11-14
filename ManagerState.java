@@ -100,7 +100,7 @@ public class ManagerState extends WarehouseState
      * @param id the ID of the clerk
      */
     public void becomeClerk() {
-        context.login(context.CLERK, null);
+        context.become(WarehouseContext.CLERK, null);   // remember the manager so logout returns here
     }
 
     /**
@@ -116,7 +116,7 @@ public class ManagerState extends WarehouseState
     @Override
     public void run() {
         JFrame frame = prepareFrame();
-        frame.setTitle("Warehouse - Clerk");
+        frame.setTitle("Warehouse - Manager");
         frame.getContentPane().setLayout(new BorderLayout());   // buttons on top, output below
 
         JPanel buttons = new JPanel(new FlowLayout());

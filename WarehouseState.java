@@ -113,6 +113,22 @@ public abstract class WarehouseState
         }
     }
     /**
+     * Prompt for a whole number no smaller than {@code min}: re-asks on bad or
+     * too-small input, returns null if cancelled.
+     * @param label the label for the input field
+     * @param min the smallest number accepted
+     * @return the user's input, or null if cancelled
+     */
+    protected Integer promptInt(String label, int min) {
+        while (true) {
+            Integer n = promptInt(label);
+            if (n == null) return null;
+            if (n >= min) return n;
+            JOptionPane.showMessageDialog(context.getFrame(), label + " must be at least " + min + ".");
+        }
+    }
+
+    /**
      * Prompt for a decimal number: re-asks on bad input, returns null if cancelled.
      * @param label the label for the input field
      * @return the user's input, or null if cancelled

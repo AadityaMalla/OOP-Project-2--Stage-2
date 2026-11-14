@@ -103,6 +103,35 @@ public class Warehouse
         return clientList.addClientWishlistEntry(clientID, productID, quantity);
     }
     /**
+     * Removes a product from a client's wishlist.
+     *
+     * @param clientID  the id of the client
+     * @param productID the id of the product to remove
+     * @return {@code true} if the entry was removed; {@code false} if the client
+     *         is unknown or the product is not on the wishlist
+     */
+    public boolean removeFromWishlist(String clientID, String productID)
+    {
+        return clientList.removeClientWishlistEntry(clientID, productID);
+    }
+
+    /**
+     * Changes the quantity of a product already on a client's wishlist.
+     *
+     * @param clientID  the id of the client
+     * @param productID the id of the product on the wishlist
+     * @param quantity  the new quantity; must be positive
+     * @return {@code true} if the quantity was changed; {@code false} if the
+     *         client is unknown, the product is not on the wishlist, or the
+     *         quantity is not positive
+     */
+    public boolean updateWishlistQuantity(String clientID, String productID, int quantity)
+    {
+        if (quantity <= 0) return false;
+        return clientList.setClientWishlistQuantity(clientID, productID, quantity);
+    }
+
+    /**
      * Returns a list of all clients.
      * @return a list of all clients
      */

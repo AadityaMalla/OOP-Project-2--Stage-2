@@ -13,16 +13,16 @@ import javax.swing.*;
 public class WarehouseContext
 {
     // state codes (also the acting role)
-    public static final int CLIENT = 0, CLERK = 1, MANAGER = 2, LOGIN = 3;
+    public static final int CLIENT = 0, CLERK = 1, MANAGER = 2, LOGIN = 3, WISHLIST = 4;
 
     // transition events (matrix columns)
     public static final int TO_CLIENT = 0, TO_CLERK = 1, TO_MANAGER = 2,
-                            TO_LOGIN = 3, TERMINATE = 4;
+                            TO_LOGIN = 3, TERMINATE = 4, TO_WISHLIST = 5;
 
     private static WarehouseContext instance;
 
-    private final WarehouseState[] states = new WarehouseState[4];
-    private final int[][] nextState = new int[4][5];
+    private final WarehouseState[] states = new WarehouseState[5];
+    private final int[][] nextState = new int[5][6];
 
     private int currentState = LOGIN;
     private String userID;
@@ -48,6 +48,7 @@ public class WarehouseContext
         states[CLERK]   = ClerkState.getInstance();
         states[MANAGER] = ManagerState.getInstance();
         states[LOGIN]   = LoginState.getInstance();
+        states[WISHLIST] = WishlistState.getInstance();
 
         for (int[] row : nextState) Arrays.fill(row, -2);   // -2 == invalid by default
 
@@ -58,6 +59,9 @@ public class WarehouseContext
 
         nextState[CLIENT][TO_CLERK]  = CLERK;   // logout back to clerk
         nextState[CLIENT][TO_LOGIN]  = LOGIN;   // logout out to login
+        nextState[CLIENT][TO_WISHLIST] = WISHLIST; // wishlist operations
+
+        nextState[WISHLIST][TO_CLIENT] = CLIENT;   // back to the client screen
 
         nextState[CLERK][TO_CLIENT]  = CLIENT;  // become client
         nextState[CLERK][TO_MANAGER] = MANAGER; // logout back to manager
@@ -176,6 +180,7 @@ public class WarehouseContext
             case CLERK:   return TO_CLERK;
             case MANAGER: return TO_MANAGER;
             case LOGIN:   return TO_LOGIN;
+            case WISHLIST: return TO_WISHLIST;
             default:      return TERMINATE;
         }
     }
